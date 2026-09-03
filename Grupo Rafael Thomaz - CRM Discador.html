@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupo Rafael Thomaz - CRM & Controle de Agendamentos</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            brand: ['Montserrat', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            thomaz: {
+              navy: '#254B77',
+              navyDark: '#1A3759',
+              navyLight: '#356399',
+              pink: '#F05CB5',
+              pinkDark: '#D83999',
+              pinkLight: '#FDF2F9',
+              slate: '#f8fafc'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .pulse-dot {
+      animation: pulseAnimation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseAnimation {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-pink-100 selection:text-thomaz-pinkDark">
+
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20 gap-3">
+        
+        <!-- Logo Grupo Rafael Thomaz -->
+        <div class="flex items-center gap-3">
+          <img src="4.png" alt="Grupo Rafael Thomaz" class="h-11 w-auto object-contain hidden sm:block" onerror="this.classList.add('!hidden'); document.getElementById('logoSvgFallback').classList.remove('hidden');">
+          
+          <div id="logoSvgFallback" class="flex items-center gap-2.5">
+            <svg class="w-9 h-9 flex-shrink-0" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M40 54L60 30L80 54" stroke="#254B77" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M84 48L90 38" stroke="#254B77" stroke-width="10" stroke-linecap="round"/>
+              <path d="M30 54L60 92L90 54H48L40 66H76" stroke="#F05CB5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="flex flex-col">
+              <span class="font-brand font-extrabold text-[14px] sm:text-base text-thomaz-navy tracking-wider leading-none">GRUPO</span>
+              <span class="font-brand font-black text-[11px] sm:text-xs text-thomaz-pink tracking-widest leading-tight uppercase">RAFAEL THOMAZ</span>
+            </div>
+          </div>
+          
+          <div class="hidden md:block h-6 w-[1px] bg-slate-200 ml-1"></div>
+          
+          <!-- Badge de Visão Ativa (Admin vs Usuário) -->
+          <div id="viewModeBadge" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Barra de Ações e Troca de Usuário -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+
+          <!-- Conexão com Google Planilha Status -->
+          <button onclick="openGoogleSyncModal()" id="googleSyncButton" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition shadow-2xs" title="Configurar envio automático para o Google Sheets">
+            <i class="fa-solid fa-file-excel text-emerald-600"></i>
+            <span id="googleSyncText" class="hidden lg:inline">Conectar Planilha Google</span>
+            <span id="googleSyncIndicator" class="w-2 h-2 rounded-full bg-amber-400"></span>
+          </button>
+
+          <!-- Seletor de Perfil / Usuário -->
+          <div class="relative flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+            <button onclick="openSwitchUserModal()" class="flex items-center gap-2 px-2.5 py-1 text-xs font-bold text-slate-800 hover:text-thomaz-navy transition">
+              <div id="userAvatarBadge" class="w-6 h-6 rounded-full bg-thomaz-navy text-white flex items-center justify-center text-[10px] font-black">
+                A
+              </div>
+              <div class="text-left hidden sm:block">
+                <span id="userNameLabel" class="block text-xs font-bold leading-none text-slate-900">Rafael Thomaz</span>
+                <span id="userRoleLabel" class="block text-[10px] font-medium text-slate-500 leading-tight">Administrador</span>
+              </div>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-0.5"></i>
+            </button>
+          </div>
+
+          <!-- Botão Gerenciar Equipe (Apenas para Administrador) -->
+          <button id="adminTeamBtn" onclick="openTeamModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs">
+            <i class="fa-solid fa-users-gear text-thomaz-navy"></i>
+            <span class="hidden md:inline">Equipe</span>
+          </button>
+
+          <!-- Botão Exportar CSV (Admin) -->
+          <button id="adminExportBtn" onclick="exportToCSV()" class="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs" title="Exportar CSV">
+            <i class="fa-solid fa-download text-slate-500"></i>
+            <span>Exportar</span>
+          </button>
+
+          <!-- Botão Novo Agendamento -->
+          <button onclick="openAppointmentModal()" class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-thomaz-pink hover:bg-thomaz-pinkDark rounded-lg shadow-sm shadow-pink-500/20 transition active:scale-95">
+            <i class="fa-solid fa-plus"></i>
+            <span class="hidden xs:inline">Novo Agendamento</span>
+            <span class="xs:hidden">Novo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="googleSheetsNoticeBanner" class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs px-4 py-2 border-b border-emerald-800 shadow-xs flex items-center justify-between">
+    <div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="flex h-2 w-2 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-200"></span>
+        </span>
+        <span class="font-semibold">Sincronização Automática com o Google Planilhas disponível!</span>
+        <span class="text-emerald-100 hidden md:inline">Todos os agendamentos registrados são salvos na sua conta Google instantaneamente.</span>
+      </div>
+      <button onclick="openGoogleSyncModal()" class="text-[11px] font-bold bg-white text-emerald-800 hover:bg-emerald-50 px-3 py-1 rounded-md shadow-xs transition flex-shrink-0">
+        <i class="fa-solid fa-plug mr-1"></i> Configurar Agora (Grátis)
+      </button>
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Header do Contexto do Usuário / Boas-vindas -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+      <div>
+        <h1 id="welcomeTitle" class="text-base sm:text-lg font-black text-thomaz-navy flex items-center gap-2">
+          Painel de Controle
+        </h1>
+        <p id="welcomeSubtitle" class="text-xs text-slate-500">
+          Gerencie e acompanhe o fluxo de prospecções comerciais da sua empresa.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div id="userRoleIndicatorTag" class="px-2.5 py-1 rounded-lg text-xs font-bold border">
+          <!-- Dynamically populated -->
+        </div>
+        <button onclick="openSwitchUserModal()" class="text-xs font-semibold text-thomaz-navy hover:underline px-2 py-1">
+          <i class="fa-solid fa-arrows-rotate mr-1"></i> Alternar Perfil
+        </button>
+      </div>
+    </div>
+    
+    <!-- Estatísticas Dinâmicas -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs border-l-4 border-l-thomaz-navy">
+        <div class="flex items-center justify-between">
+          <div>
+            <p id="statLabelTotal" class="text-xs font-medium text-slate-500">Total de Agendamentos</p>
+            <h3 id="statTotal" class="text-2xl font-black text-thomaz-navy mt-1">0</h3>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-slate-100 text-thomaz-navy flex items-center justify-center text-lg">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs border-l-4 border-l-thomaz-pink">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Reuniões Marcadas Hoje</p>
+            <h3 id="statToday" class="text-2xl font-black text-thomaz-pink mt-1">0</h3>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-pink-50 text-thomaz-pink flex items-center justify-center text-lg">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs border-l-4 border-l-emerald-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Reuniões Realizadas</p>
+            <h3 id="statCompleted" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs border-l-4 border-l-indigo-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p id="statLabelContext" class="text-xs font-medium text-slate-500">Membros Ativos</p>
+            <h3 id="statContextValue" class="text-2xl font-black text-indigo-600 mt-1">0</h3>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i id="statContextIcon" class="fa-solid fa-users"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-3">
+        <!-- Search Input -->
+        <div class="relative w-full lg:w-96">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" id="searchInput" oninput="renderTable()" placeholder="Buscar por Nome, CNPJ, Telefone ou Motivo..." class="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
+          
+          <!-- Filtro por Membro (Disponível apenas na Visão de Administrador) -->
+          <div id="filterMemberContainer" class="flex items-center gap-1.5 text-xs text-slate-600">
+            <label for="filterMember" class="font-medium text-slate-500">Membro:</label>
+            <select id="filterMember" onchange="renderTable()" class="py-1.5 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-thomaz-navy">
+              <option value="ALL">Toda a Equipe</option>
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+
+          <!-- Filtro: Status -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-600">
+            <label for="filterStatus" class="font-medium text-slate-500">Status:</label>
+            <select id="filterStatus" onchange="renderTable()" class="py-1.5 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-thomaz-navy">
+              <option value="ALL">Todos os Status</option>
+              <option value="Agendada">Agendada</option>
+              <option value="Confirmada">Confirmada</option>
+              <option value="Realizada">Realizada</option>
+              <option value="No-Show">No-Show (Faltou)</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
+
+          <!-- Filtro: Período -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-600">
+            <label for="filterPeriod" class="font-medium text-slate-500">Data:</label>
+            <select id="filterPeriod" onchange="renderTable()" class="py-1.5 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-thomaz-navy">
+              <option value="ALL">Todas as Datas</option>
+              <option value="TODAY">Reuniões de Hoje</option>
+              <option value="WEEK">Próximos 7 Dias</option>
+              <option value="FUTURE">Todas as Futuras</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter -->
+          <button onclick="resetFilters()" class="p-2 text-xs text-slate-400 hover:text-slate-600 rounded-lg border border-slate-200 hover:bg-slate-100" title="Limpar Filtros">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+      <div class="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-thomaz-pink"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-thomaz-navy">
+            CONTROLE DE AGENDAMENTOS
+          </h2>
+          <span id="currentTableModeTag" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+            Visão Geral
+          </span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span id="resultsCountBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+            0 registros
+          </span>
+          <button onclick="openAppointmentModal()" class="text-xs font-bold text-thomaz-pink hover:text-thomaz-pinkDark flex items-center gap-1">
+            <i class="fa-solid fa-plus-circle"></i> Adicionar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela Responsiva com as Colunas Exatas da Foto -->
+      <div class="overflow-x-auto min-h-[360px]">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-700 uppercase text-[11px] font-bold tracking-wider">
+              <th id="thResponsavel" class="py-3 px-4">Responsável</th>
+              <th class="py-3 px-4 min-w-[170px]">Nome</th>
+              <th class="py-3 px-4 min-w-[150px]">CNPJ</th>
+              <th class="py-3 px-4 min-w-[150px]">Telefone (Discador)</th>
+              <th class="py-3 px-4 min-w-[150px]">Whatsapp</th>
+              <th class="py-3 px-4 whitespace-nowrap">Data Reunião</th>
+              <th class="py-3 px-4 whitespace-nowrap">Horario</th>
+              <th class="py-3 px-4 min-w-[220px]">Motivo da Reunião</th>
+              <th class="py-3 px-4 text-center">Status</th>
+              <th class="py-3 px-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsTableBody" class="divide-y divide-slate-200 text-slate-700">
+            <!-- Dynamically populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 text-center">
+        <div class="w-14 h-14 rounded-full bg-pink-50 text-thomaz-pink flex items-center justify-center text-2xl mb-3">
+          <i class="fa-regular fa-calendar-xmark"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">Nenhum agendamento encontrado</h4>
+        <p id="emptyStateMsg" class="text-xs text-slate-500 max-w-sm mt-1">
+          Nenhuma reunião encontrada para este filtro. Cadastre uma nova prospecção!
+        </p>
+        <button onclick="openAppointmentModal()" class="mt-4 px-4 py-2 text-xs font-bold text-white bg-thomaz-navy hover:bg-thomaz-navyDark rounded-lg transition shadow-sm">
+          <i class="fa-solid fa-plus mr-1.5"></i> Cadastrar Nova Reunião
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <div id="appointmentModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 rounded-t-2xl">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-pink-50 text-thomaz-pink flex items-center justify-center font-bold text-base">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h3 id="appointmentModalTitle" class="text-sm font-bold text-thomaz-navy">Novo Agendamento Comercial</h3>
+            <p class="text-[11px] text-slate-500">Os dados serão sincronizados automaticamente com o Google Planilhas</p>
+          </div>
+        </div>
+        <button onclick="closeAppointmentModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="appointmentForm" onsubmit="saveAppointment(event)" class="p-6 space-y-4">
+        <input type="hidden" id="appointmentId">
+
+        <!-- Responsável SDR / Membro -->
+        <div id="memberSelectContainer">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Membro Responsável *</label>
+          <select id="inputMember" required class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy bg-white font-medium">
+            <!-- Populated dynamically -->
+          </select>
+          <p id="memberFixedNotice" class="hidden text-[11px] text-slate-500 mt-1 italic">
+            Registrando em nome de: <span id="memberFixedName" class="font-bold text-thomaz-navy"></span>
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Nome -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nome (Contato / Empresa) *</label>
+            <input type="text" id="inputNome" required placeholder="Ex: Lucas Ferreira - ABC Logística" class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+
+          <!-- CNPJ -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">CNPJ</label>
+            <input type="text" id="inputCnpj" oninput="maskCNPJ(this)" placeholder="00.000.000/0000-00" maxlength="18" class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+        </div>
+
+        <!-- Telefones -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Telefone (Discador) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              <i class="fa-solid fa-phone text-slate-400 mr-1"></i> Telefone (Discador) *
+            </label>
+            <input type="tel" id="inputTelefone" required oninput="maskPhone(this)" placeholder="(11) 99999-9999" maxlength="15" class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+
+          <!-- Whatsapp -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              <i class="fa-brands fa-whatsapp text-emerald-500 mr-1"></i> Whatsapp *
+            </label>
+            <input type="tel" id="inputWhatsapp" required oninput="maskPhone(this)" placeholder="(11) 99999-9999" maxlength="15" class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+        </div>
+
+        <!-- Data, Horário e Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Data Reunião -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              <i class="fa-regular fa-calendar text-slate-400 mr-1"></i> Data Reunião *
+            </label>
+            <input type="date" id="inputDataReuniao" required class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+
+          <!-- Horario -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              <i class="fa-regular fa-clock text-slate-400 mr-1"></i> Horario *
+            </label>
+            <input type="time" id="inputHorario" required class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+            <select id="inputStatus" class="w-full text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy bg-white font-medium">
+              <option value="Agendada">Agendada</option>
+              <option value="Confirmada">Confirmada</option>
+              <option value="Realizada">Realizada</option>
+              <option value="No-Show">No-Show (Faltou)</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Motivo da Reunião -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Motivo da Reunião *</label>
+          <textarea id="inputMotivo" required rows="3" placeholder="Ex: Diagnóstico empresarial, proposta de expansão comercial..." class="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy"></textarea>
+        </div>
+
+        <!-- Status de Envio Google Sheets -->
+        <div id="sheetsSendingNotice" class="hidden p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 flex items-center gap-2">
+          <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+          <span>Enviando dados diretamente para o seu Google Planilhas...</span>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeAppointmentModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
+            Cancelar
+          </button>
+          <button type="submit" id="btnSubmitAppointment" class="px-5 py-2 text-xs font-bold text-white bg-thomaz-pink hover:bg-thomaz-pinkDark rounded-lg shadow-md shadow-pink-500/20 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Salvar Agendamento</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="switchUserModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 rounded-t-2xl">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 text-thomaz-navy flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-user-gear"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-thomaz-navy">Alternar Perfil / Usuário</h3>
+            <p class="text-[11px] text-slate-500">Escolha como deseja visualizar e operar o CRM</p>
+          </div>
+        </div>
+        <button onclick="closeSwitchUserModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-3 max-h-[65vh] overflow-y-auto" id="userSwitchListContainer">
+        <!-- Rendered dynamically with Admin and Members -->
+      </div>
+
+      <div class="px-6 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/80 rounded-b-2xl">
+        <button onclick="openTeamModal()" class="text-xs font-bold text-thomaz-navy hover:underline">
+          <i class="fa-solid fa-user-plus mr-1"></i> Gerenciar Membros
+        </button>
+        <button onclick="closeSwitchUserModal()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="teamModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 rounded-t-2xl">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 text-thomaz-navy flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-users-gear"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-thomaz-navy">Gestão de Usuários da Equipe</h3>
+            <p class="text-[11px] text-slate-500">Cadastre e configure administradores e membros da equipe</p>
+          </div>
+        </div>
+        <button onclick="closeTeamModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <!-- Add New Member Form -->
+        <form id="newMemberForm" onsubmit="addNewMember(event)" class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-700">Adicionar Novo Integrante</label>
+          <div class="flex gap-2">
+            <input type="text" id="newMemberName" required placeholder="Nome do membro (ex: Rafaela Silva)" class="flex-1 text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy">
+            <select id="newMemberRole" class="text-xs py-2 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-thomaz-navy bg-white font-medium">
+              <option value="SDR">SDR</option>
+              <option value="Closer">Closer</option>
+              <option value="Administrador">Admin</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full py-2 text-xs font-bold text-white bg-thomaz-navy hover:bg-thomaz-navyDark rounded-lg transition shadow-xs">
+            <i class="fa-solid fa-plus mr-1"></i> Cadastrar Integrante
+          </button>
+        </form>
+
+        <!-- Current Team List -->
+        <div class="space-y-2 pt-2">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Integrantes Cadastrados</label>
+          <div id="teamListContainer" class="max-h-56 overflow-y-auto space-y-2 divide-y divide-slate-100 pr-1">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 border-t border-slate-100 flex justify-end bg-slate-50/80 rounded-b-2xl">
+        <button onclick="closeTeamModal()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+          Concluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="googleSyncModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50/80 rounded-t-2xl">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">
+            <i class="fa-solid fa-file-excel"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Integração Automática com Google Planilhas</h3>
+            <p class="text-[11px] text-emerald-800">100% Grátis: cada agendamento é enviado diretamente para a sua planilha</p>
+          </div>
+        </div>
+        <button onclick="closeGoogleSyncModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-xs text-slate-700">
+        
+        <!-- Explicação Rápida -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center gap-2 font-bold text-slate-900 text-xs">
+            <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+            Como funciona a sincronização direta?
+          </div>
+          <p class="text-[11.5px] leading-relaxed text-slate-600">
+            Com apenas <strong>1 script simples</strong> colado na sua Planilha Google, toda vez que qualquer membro da sua equipe cadastrar ou atualizar um agendamento neste CRM, as informações serão inseridas <strong>instantaneamente como uma nova linha na planilha</strong>.
+          </p>
+        </div>
+
+        <!-- Passo a Passo -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-thomaz-navy text-white text-[10px] flex items-center justify-center font-bold">1</span>
+            Copie o Script Automático para sua Planilha
+          </h4>
+          <p class="text-slate-600">
+            Na sua planilha do Google, vá em <strong>Extensões</strong> > <strong>Apps Script</strong>. Apague o código que estiver lá e cole o código abaixo:
+          </p>
+
+          <div class="relative">
+            <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg text-[11px] font-mono overflow-x-auto max-h-48 border border-slate-800"><code>function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  // Insere na ordem idêntica da foto:
+  // Nome | CNPJ | Telefone | Whatsapp | Data Reunião | Horario | Motivo da Reunião | Responsável | Status
+  sheet.appendRow([
+    data.nome,
+    data.cnpj || '',
+    data.telefone,
+    data.whatsapp,
+    data.dataReuniao,
+    data.horario,
+    data.motivo,
+    data.responsavel,
+    data.status,
+    new Date()
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({"result": "success"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</code></pre>
+            <button onclick="copyAppsScriptCode()" class="absolute top-2 right-2 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-semibold border border-slate-700 flex items-center gap-1">
+              <i class="fa-regular fa-copy"></i> Copiar Código
+            </button>
+          </div>
+        </div>
+
+        <!-- Passo 2 -->
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-thomaz-navy text-white text-[10px] flex items-center justify-center font-bold">2</span>
+            Publicar como Aplicativo da Web
+          </h4>
+          <p class="text-slate-600">
+            No canto superior direito do Apps Script, clique em <strong>Implantar</strong> > <strong>Nova implantação</strong> > engrenagem <strong>App da Web</strong>. Em <em>"Quem tem acesso"</em> selecione <strong>Qualquer pessoa</strong> e clique em <strong>Implantar</strong>.
+          </p>
+        </div>
+
+        <!-- Passo 3: Colar a URL -->
+        <div class="space-y-2 pt-1 border-t border-slate-200">
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-thomaz-pink text-white text-[10px] flex items-center justify-center font-bold">3</span>
+            Cole o Link da sua Planilha Aqui
+          </h4>
+          <p class="text-slate-600">
+            Cole a URL gerada (começa com <code class="bg-slate-100 px-1 py-0.5 rounded text-[10px] text-slate-800">https://script.google.com/macros/s/.../exec</code>):
+          </p>
+          <div class="flex gap-2">
+            <input type="url" id="googleWebhookUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-1 text-xs py-2 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+            <button onclick="saveGoogleWebhookUrl()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition">
+              Salvar Conexão
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/80 rounded-b-2xl">
+        <span id="webhookSaveStatus" class="text-xs font-semibold text-slate-500"></span>
+        <button onclick="closeGoogleSyncModal()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <script>
+    const STORAGE_KEY_APPOINTMENTS = 'thomaz_crm_appointments_v2';
+    const STORAGE_KEY_TEAM = 'thomaz_crm_team_v2';
+    const STORAGE_KEY_ACTIVE_USER = 'thomaz_crm_active_user_v2';
+    const STORAGE_KEY_WEBHOOK = 'thomaz_crm_google_webhook_url';
+
+    /* Equipe Padrão Inicial (Administradores e Membros) */
+    const defaultTeam = [
+      { id: '1', name: 'Rafael Thomaz', role: 'Administrador', email: 'rafael@thomaz.com.br' },
+      { id: '2', name: 'Ana Beatriz', role: 'SDR', email: 'ana@thomaz.com.br' },
+      { id: '3', name: 'Carlos Eduardo', role: 'Closer', email: 'carlos@thomaz.com.br' },
+      { id: '4', name: 'Mariana Lima', role: 'SDR', email: 'mariana@thomaz.com.br' }
+    ];
+
+    /* Agendamentos Padrão de Amostra */
+    const defaultAppointments = [
+      {
+        id: '101',
+        memberId: '2',
+        nome: 'Logística & Transportes Horizonte',
+        cnpj: '23.456.789/0001-01',
+        telefone: '(11) 98765-4321',
+        whatsapp: '(11) 98765-4321',
+        dataReuniao: getTodayIsoDate(),
+        horario: '14:30',
+        motivo: 'Apresentação comercial e diagnóstico financeiro.',
+        status: 'Agendada'
+      },
+      {
+        id: '102',
+        memberId: '3',
+        nome: 'Indústria Metalúrgica Valença',
+        cnpj: '78.910.112/0001-44',
+        telefone: '(21) 99887-1122',
+        whatsapp: '(21) 99887-1122',
+        dataReuniao: getTodayIsoDate(),
+        horario: '16:00',
+        motivo: 'Alinhamento com diretoria para proposta comercial.',
+        status: 'Confirmada'
+      }
+    ];
+
+    /* Variáveis Globais de Estado */
+    let teamMembers = loadFromStorage(STORAGE_KEY_TEAM, defaultTeam);
+    let appointments = loadFromStorage(STORAGE_KEY_APPOINTMENTS, defaultAppointments);
+    let activeUserId = localStorage.getItem(STORAGE_KEY_ACTIVE_USER) || '1';
+    let googleWebhookUrl = localStorage.getItem(STORAGE_KEY_WEBHOOK) || '';
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY_TEAM, JSON.stringify(teamMembers));
+      localStorage.setItem(STORAGE_KEY_APPOINTMENTS, JSON.stringify(appointments));
+      localStorage.setItem(STORAGE_KEY_ACTIVE_USER, activeUserId);
+    }
+
+    function loadFromStorage(key, fallback) {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function getTodayIsoDate() {
+      const now = new Date();
+      return now.toISOString().split('T')[0];
+    }
+
+    function getActiveUser() {
+      return teamMembers.find(m => m.id === activeUserId) || teamMembers[0] || { id: '1', name: 'Administrador', role: 'Administrador' };
+    }
+
+    function isAdmin() {
+      const user = getActiveUser();
+      return user.role === 'Administrador';
+    }
+
+    window.onload = function() {
+      updateUserContextUI();
+      loadTeamSelects();
+      renderTeamList();
+      renderTable();
+      updateDashboardCards();
+      updateGoogleSyncUI();
+      
+      document.getElementById('inputDataReuniao').value = getTodayIsoDate();
+    };
+
+    function updateUserContextUI() {
+      const user = getActiveUser();
+      const admin = isAdmin();
+
+      // Top Bar Elements
+      document.getElementById('userNameLabel').textContent = user.name;
+      document.getElementById('userRoleLabel').textContent = user.role;
+      document.getElementById('userAvatarBadge').textContent = user.name.charAt(0).toUpperCase();
+
+      const viewModeBadge = document.getElementById('viewModeBadge');
+      if (admin) {
+        viewModeBadge.className = "hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200";
+        viewModeBadge.innerHTML = `<i class="fa-solid fa-crown text-amber-600"></i> Visão Administrador (Geral)`;
+        
+        document.getElementById('adminTeamBtn').classList.remove('hidden');
+        document.getElementById('adminExportBtn').classList.remove('hidden');
+        document.getElementById('filterMemberContainer').classList.remove('hidden');
+        document.getElementById('thResponsavel').classList.remove('hidden');
+        document.getElementById('currentTableModeTag').textContent = "Todas as Prospecções da Equipe";
+
+        document.getElementById('welcomeTitle').innerHTML = `Painel do Gestor <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">Administrador</span>`;
+        document.getElementById('welcomeSubtitle').textContent = `Você tem acesso total para ver, auditar e gerenciar os agendamentos de todos os membros.`;
+
+        const userTag = document.getElementById('userRoleIndicatorTag');
+        userTag.className = "px-2.5 py-1 rounded-lg text-xs font-bold border bg-amber-50 text-amber-800 border-amber-200";
+        userTag.innerHTML = `<i class="fa-solid fa-shield-halved mr-1"></i> Acesso Total`;
+      } else {
+        viewModeBadge.className = "hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-thomaz-navy border border-blue-200";
+        viewModeBadge.innerHTML = `<i class="fa-solid fa-user text-thomaz-navy"></i> Visão de Membro (${user.role})`;
+
+        document.getElementById('adminTeamBtn').classList.add('hidden');
+        document.getElementById('adminExportBtn').classList.add('hidden');
+        document.getElementById('filterMemberContainer').classList.add('hidden');
+        document.getElementById('thResponsavel').classList.add('hidden');
+        document.getElementById('currentTableModeTag').textContent = `Minhas Prospecções (${user.name})`;
+
+        document.getElementById('welcomeTitle').innerHTML = `Olá, ${escapeHtml(user.name)}! <span class="text-xs bg-pink-100 text-thomaz-pinkDark font-bold px-2 py-0.5 rounded-md">${user.role}</span>`;
+        document.getElementById('welcomeSubtitle').textContent = `Aqui estão os seus agendamentos comerciais. Cadastre novos contatos abaixo.`;
+
+        const userTag = document.getElementById('userRoleIndicatorTag');
+        userTag.className = "px-2.5 py-1 rounded-lg text-xs font-bold border bg-blue-50 text-thomaz-navy border-blue-200";
+        userTag.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> Minha Carteira`;
+      }
+
+      // Modal Form Member Selection
+      const memberContainer = document.getElementById('memberSelectContainer');
+      const inputMember = document.getElementById('inputMember');
+      const memberFixedNotice = document.getElementById('memberFixedNotice');
+      const memberFixedName = document.getElementById('memberFixedName');
+
+      if (admin) {
+        inputMember.classList.remove('hidden');
+        memberFixedNotice.classList.add('hidden');
+      } else {
+        inputMember.classList.add('hidden');
+        memberFixedNotice.classList.remove('hidden');
+        memberFixedName.textContent = `${user.name} (${user.role})`;
+      }
+    }
+
+    function openSwitchUserModal() {
+      const container = document.getElementById('userSwitchListContainer');
+      container.innerHTML = '';
+
+      teamMembers.forEach(member => {
+        const isCurrent = member.id === activeUserId;
+        const isAdminRole = member.role === 'Administrador';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => switchUserTo(member.id);
+        btn.className = `w-full flex items-center justify-between p-3 rounded-xl border text-left transition ${
+          isCurrent 
+            ? 'bg-pink-50 border-thomaz-pink shadow-xs' 
+            : 'bg-white border-slate-200 hover:bg-slate-50'
+        }`;
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full ${isAdminRole ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-thomaz-navy'} font-black text-xs flex items-center justify-center">
+              ${isAdminRole ? '<i class="fa-solid fa-crown text-amber-600"></i>' : member.name.charAt(0)}
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-xs text-slate-900">${escapeHtml(member.name)}</span>
+                ${isCurrent ? '<span class="text-[9px] bg-thomaz-pink text-white font-bold px-1.5 py-0.2 rounded uppercase">Ativo</span>' : ''}
+              </div>
+              <span class="text-[11px] text-slate-500 font-medium">${escapeHtml(member.role)} ${member.email ? '• ' + escapeHtml(member.email) : ''}</span>
+            </div>
+          </div>
+          <span class="text-xs text-slate-400">
+            ${isCurrent ? '<i class="fa-solid fa-circle-check text-thomaz-pink text-base"></i>' : '<i class="fa-solid fa-arrow-right-to-bracket"></i>'}
+          </span>
+        `;
+
+        container.appendChild(btn);
+      });
+
+      document.getElementById('switchUserModal').classList.remove('hidden');
+    }
+
+    function closeSwitchUserModal() {
+      document.getElementById('switchUserModal').classList.add('hidden');
+    }
+
+    function switchUserTo(newUserId) {
+      activeUserId = newUserId;
+      saveState();
+      closeSwitchUserModal();
+      updateUserContextUI();
+      loadTeamSelects();
+      renderTable();
+      updateDashboardCards();
+
+      const user = getActiveUser();
+      showToast(`Você agora está na visão de: ${user.name} (${user.role})`);
+    }
+
+    function loadTeamSelects() {
+      const inputMemberSelect = document.getElementById('inputMember');
+      const filterMemberSelect = document.getElementById('filterMember');
+
+      const currentFilter = filterMemberSelect.value;
+      inputMemberSelect.innerHTML = '';
+      filterMemberSelect.innerHTML = '<option value="ALL">Toda a Equipe</option>';
+
+      teamMembers.forEach(member => {
+        // Form Select
+        const opt1 = document.createElement('option');
+        opt1.value = member.id;
+        opt1.textContent = `${member.name} (${member.role})`;
+        if (member.id === activeUserId) opt1.selected = true;
+        inputMemberSelect.appendChild(opt1);
+
+        // Filter Select
+        const opt2 = document.createElement('option');
+        opt2.value = member.id;
+        opt2.textContent = `${member.name} (${member.role})`;
+        filterMemberSelect.appendChild(opt2);
+      });
+
+      if (currentFilter) filterMemberSelect.value = currentFilter;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('appointmentsTableBody');
+      const emptyState = document.getElementById('emptyState');
+      const countBadge = document.getElementById('resultsCountBadge');
+      const user = getActiveUser();
+      const admin = isAdmin();
+
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const memberFilter = document.getElementById('filterMember').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+      const periodFilter = document.getElementById('filterPeriod').value;
+      const todayStr = getTodayIsoDate();
+
+      tbody.innerHTML = '';
+
+      const filtered = appointments.filter(item => {
+        // PERMISSÃO: Se for Membro (SDR/Closer), vê SOMENTE os agendamentos cadastrados por ele.
+        // Se for Administrador, pode ver todos ou filtrar.
+        if (!admin && item.memberId !== user.id) {
+          return false;
+        }
+
+        const matchSearch = !search || 
+          (item.nome && item.nome.toLowerCase().includes(search)) || 
+          (item.cnpj && item.cnpj.toLowerCase().includes(search)) || 
+          (item.telefone && item.telefone.toLowerCase().includes(search)) ||
+          (item.whatsapp && item.whatsapp.toLowerCase().includes(search)) ||
+          (item.motivo && item.motivo.toLowerCase().includes(search));
+
+        const matchMember = !admin || memberFilter === 'ALL' || item.memberId === memberFilter;
+        const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
+
+        let matchPeriod = true;
+        if (periodFilter === 'TODAY') {
+          matchPeriod = item.dataReuniao === todayStr;
+        } else if (periodFilter === 'WEEK') {
+          const itemDate = new Date(item.dataReuniao);
+          const now = new Date();
+          const oneWeek = 7 * 24 * 60 * 60 * 1000;
+          matchPeriod = Math.abs(itemDate - now) <= oneWeek;
+        } else if (periodFilter === 'FUTURE') {
+          matchPeriod = item.dataReuniao >= todayStr;
+        }
+
+        return matchSearch && matchMember && matchStatus && matchPeriod;
+      });
+
+      // Ordenar por data & horário
+      filtered.sort((a, b) => {
+        const d1 = `${a.dataReuniao} ${a.horario}`;
+        const d2 = `${b.dataReuniao} ${b.horario}`;
+        return d1.localeCompare(d2);
+      });
+
+      countBadge.textContent = `${filtered.length} registro${filtered.length !== 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+      }
+
+      filtered.forEach(item => {
+        const member = teamMembers.find(m => m.id === item.memberId) || { name: 'Equipe', role: 'SDR' };
+        
+        // Clean WhatsApp number
+        const cleanWhatsapp = item.whatsapp ? item.whatsapp.replace(/\D/g, '') : '';
+        const whatsappMsg = `Olá ${item.nome}, tudo bem? Aqui é ${member.name} do Grupo Rafael Thomaz. Gostaria de confirmar nossa reunião!`;
+        const whatsappUrl = `https://wa.me/55${cleanWhatsapp}?text=${encodeURIComponent(whatsappMsg)}`;
+        
+        // Discador
+        const cleanTel = item.telefone ? item.telefone.replace(/\D/g, '') : '';
+        const telUrl = `tel:${cleanTel}`;
+
+        // Status Badge Style
+        let statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300';
+        if (item.status === 'Agendada') statusBadgeClass = 'bg-blue-50 text-thomaz-navy border-blue-200 font-bold';
+        else if (item.status === 'Confirmada') statusBadgeClass = 'bg-pink-50 text-thomaz-pinkDark border-pink-200 font-bold';
+        else if (item.status === 'Realizada') statusBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold';
+        else if (item.status === 'No-Show') statusBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200 font-bold';
+        else if (item.status === 'Cancelada') statusBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200 font-bold';
+
+        // Brazilian Date
+        const dateParts = item.dataReuniao ? item.dataReuniao.split('-') : [];
+        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : item.dataReuniao;
+        const isToday = item.dataReuniao === todayStr;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/90 transition group";
+        
+        // Se for admin, exibe a coluna do responsável
+        const responsavelTd = admin ? `
+          <td class="py-3 px-4 whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-slate-100 text-thomaz-navy border border-slate-200 font-black text-[10px] flex items-center justify-center">
+                ${member.name.charAt(0)}
+              </div>
+              <div>
+                <span class="font-semibold text-slate-800 block leading-tight">${escapeHtml(member.name)}</span>
+                <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(member.role)}</span>
+              </div>
+            </div>
+          </td>
+        ` : '';
+
+        tr.innerHTML = `
+          ${responsavelTd}
+
+          <!-- Nome (Lead / Empresa) -->
+          <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">
+            ${escapeHtml(item.nome)}
+          </td>
+
+          <!-- CNPJ -->
+          <td class="py-3 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+            ${escapeHtml(item.cnpj || '—')}
+          </td>
+
+          <!-- Telefone (Discador) -->
+          <td class="py-3 px-4 whitespace-nowrap">
+            <a href="${telUrl}" class="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-thomaz-navy bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition shadow-2xs" title="Ligar agora">
+              <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
+              <span>${escapeHtml(item.telefone)}</span>
+            </a>
+          </td>
+
+          <!-- Whatsapp com link direto -->
+          <td class="py-3 px-4 whitespace-nowrap">
+            <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-200 transition shadow-2xs" title="Abrir conversa no WhatsApp">
+              <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
+              <span>${escapeHtml(item.whatsapp)}</span>
+            </a>
+          </td>
+
+          <!-- Data Reunião -->
+          <td class="py-3 px-4 whitespace-nowrap">
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold ${isToday ? 'text-thomaz-pink font-bold' : 'text-slate-700'}">${formattedDate}</span>
+              ${isToday ? '<span class="text-[9px] bg-pink-100 text-thomaz-pinkDark font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Hoje</span>' : ''}
+            </div>
+          </td>
+
+          <!-- Horario -->
+          <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap">
+            <i class="fa-regular fa-clock text-[10px] text-slate-400 mr-1"></i>${escapeHtml(item.horario)}
+          </td>
+
+          <!-- Motivo da Reunião -->
+          <td class="py-3 px-4 max-w-xs truncate text-slate-600" title="${escapeHtml(item.motivo)}">
+            ${escapeHtml(item.motivo)}
+          </td>
+
+          <!-- Status -->
+          <td class="py-3 px-4 text-center whitespace-nowrap">
+            <span class="inline-block px-2.5 py-1 text-[11px] rounded-full border ${statusBadgeClass}">
+              ${escapeHtml(item.status)}
+            </span>
+          </td>
+
+          <!-- Ações -->
+          <td class="py-3 px-4 text-right whitespace-nowrap">
+            <div class="flex items-center justify-end gap-1.5">
+              <button onclick="editAppointment('${item.id}')" class="p-1.5 text-slate-400 hover:text-thomaz-navy hover:bg-slate-100 rounded-md transition" title="Editar">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteAppointment('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition" title="Excluir">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateDashboardCards() {
+      const todayStr = getTodayIsoDate();
+      const user = getActiveUser();
+      const admin = isAdmin();
+
+      // Se for membro, os cartões mostram os números dele. Se for admin, mostram os números gerais.
+      const dataset = admin ? appointments : appointments.filter(a => a.memberId === user.id);
+
+      const total = dataset.length;
+      const todayCount = dataset.filter(a => a.dataReuniao === todayStr).length;
+      const completed = dataset.filter(a => a.status === 'Realizada').length;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statToday').textContent = todayCount;
+      document.getElementById('statCompleted').textContent = completed;
+
+      if (admin) {
+        document.getElementById('statLabelTotal').textContent = "Total de Agendamentos (Equipe)";
+        document.getElementById('statLabelContext').textContent = "Membros na Equipe";
+        document.getElementById('statContextValue').textContent = teamMembers.length;
+        document.getElementById('statContextIcon').className = "fa-solid fa-users";
+      } else {
+        document.getElementById('statLabelTotal').textContent = "Meus Agendamentos";
+        document.getElementById('statLabelContext').textContent = "Minhas Reuniões Concluídas";
+        document.getElementById('statContextValue').textContent = completed;
+        document.getElementById('statContextIcon').className = "fa-solid fa-trophy text-amber-500";
+      }
+    }
+
+    function openAppointmentModal(editId = null) {
+      const form = document.getElementById('appointmentForm');
+      const title = document.getElementById('appointmentModalTitle');
+      const user = getActiveUser();
+      const admin = isAdmin();
+      form.reset();
+
+      if (editId) {
+        const item = appointments.find(a => a.id === editId);
+        if (item) {
+          title.textContent = 'Editar Agendamento';
+          document.getElementById('appointmentId').value = item.id;
+          document.getElementById('inputMember').value = item.memberId;
+          document.getElementById('inputNome').value = item.nome;
+          document.getElementById('inputCnpj').value = item.cnpj;
+          document.getElementById('inputTelefone').value = item.telefone;
+          document.getElementById('inputWhatsapp').value = item.whatsapp;
+          document.getElementById('inputDataReuniao').value = item.dataReuniao;
+          document.getElementById('inputHorario').value = item.horario;
+          document.getElementById('inputMotivo').value = item.motivo;
+          document.getElementById('inputStatus').value = item.status;
+        }
+      } else {
+        title.textContent = 'Novo Agendamento';
+        document.getElementById('appointmentId').value = '';
+        document.getElementById('inputMember').value = admin ? activeUserId : user.id;
+        document.getElementById('inputDataReuniao').value = getTodayIsoDate();
+        document.getElementById('inputStatus').value = 'Agendada';
+      }
+
+      document.getElementById('appointmentModal').classList.remove('hidden');
+    }
+
+    function closeAppointmentModal() {
+      document.getElementById('appointmentModal').classList.add('hidden');
+    }
+
+    async function saveAppointment(e) {
+      e.preventDefault();
+      const id = document.getElementById('appointmentId').value;
+      const user = getActiveUser();
+      const admin = isAdmin();
+
+      const memberId = admin ? document.getElementById('inputMember').value : user.id;
+      const nome = document.getElementById('inputNome').value.trim();
+      const cnpj = document.getElementById('inputCnpj').value.trim();
+      const telefone = document.getElementById('inputTelefone').value.trim();
+      const whatsapp = document.getElementById('inputWhatsapp').value.trim();
+      const dataReuniao = document.getElementById('inputDataReuniao').value;
+      const horario = document.getElementById('inputHorario').value;
+      const motivo = document.getElementById('inputMotivo').value.trim();
+      const status = document.getElementById('inputStatus').value;
+
+      if (!nome || !telefone || !dataReuniao || !horario || !motivo) {
+        showToast('Por favor, preencha todos os campos obrigatórios (*).', 'error');
+        return;
+      }
+
+      const assignedMember = teamMembers.find(m => m.id === memberId) || user;
+
+      const appointmentRecord = {
+        id: id || Date.now().toString(),
+        memberId,
+        nome,
+        cnpj,
+        telefone,
+        whatsapp,
+        dataReuniao,
+        horario,
+        motivo,
+        status,
+        responsavel: assignedMember.name
+      };
+
+      if (id) {
+        const index = appointments.findIndex(a => a.id === id);
+        if (index !== -1) {
+          appointments[index] = appointmentRecord;
+        }
+      } else {
+        appointments.push(appointmentRecord);
+      }
+
+      saveState();
+
+      // ENVIO AUTOMÁTICO PARA O GOOGLE PLANILHAS
+      if (googleWebhookUrl) {
+        sendToGoogleSheets(appointmentRecord);
+      }
+
+      closeAppointmentModal();
+      renderTable();
+      updateDashboardCards();
+
+      showToast(
+        id ? 'Agendamento atualizado com sucesso!' : 'Novo agendamento salvo com sucesso!',
+        'success'
+      );
+    }
+
+    async function sendToGoogleSheets(record) {
+      if (!googleWebhookUrl) return;
+
+      try {
+        // Envio com mode: 'no-cors' para evitar restrições de CORS no Google Apps Script Web App
+        await fetch(googleWebhookUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(record)
+        });
+        showToast('Linha adicionada automaticamente na Planilha Google!', 'success');
+      } catch (error) {
+        console.warn('Erro ao enviar para Google Sheets:', error);
+      }
+    }
+
+    function editAppointment(id) {
+      openAppointmentModal(id);
+    }
+
+    function deleteAppointment(id) {
+      const item = appointments.find(a => a.id === id);
+      if (!item) return;
+
+      createConfirmDialog(`Deseja realmente remover o agendamento de "${item.nome}"?`, () => {
+        appointments = appointments.filter(a => a.id !== id);
+        saveState();
+        renderTable();
+        updateDashboardCards();
+        showToast('Agendamento excluído.');
+      });
+    }
+
+    function openTeamModal() {
+      if (!isAdmin()) {
+        showToast('Apenas administradores podem gerenciar a equipe.', 'error');
+        return;
+      }
+      renderTeamList();
+      document.getElementById('teamModal').classList.remove('hidden');
+    }
+
+    function closeTeamModal() {
+      document.getElementById('teamModal').classList.add('hidden');
+    }
+
+    function addNewMember(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('newMemberName');
+      const roleInput = document.getElementById('newMemberRole');
+      const name = nameInput.value.trim();
+      const role = roleInput.value;
+
+      if (!name) return;
+
+      const newMember = {
+        id: Date.now().toString(),
+        name,
+        role
+      };
+
+      teamMembers.push(newMember);
+      nameInput.value = '';
+
+      saveState();
+      loadTeamSelects();
+      renderTeamList();
+      updateDashboardCards();
+      showToast(`"${name}" (${role}) adicionado(a) à equipe!`);
+    }
+
+    function removeMember(memberId) {
+      if (teamMembers.length <= 1) {
+        showToast('A equipe deve conter pelo menos 1 membro.', 'error');
+        return;
+      }
+
+      const member = teamMembers.find(m => m.id === memberId);
+      createConfirmDialog(`Deseja remover ${member ? member.name : 'este membro'}?`, () => {
+        teamMembers = teamMembers.filter(m => m.id !== memberId);
+        if (activeUserId === memberId) {
+          activeUserId = teamMembers[0].id;
+        }
+        saveState();
+        updateUserContextUI();
+        loadTeamSelects();
+        renderTeamList();
+        renderTable();
+        updateDashboardCards();
+        showToast('Membro removido da equipe.');
+      });
+    }
+
+    function renderTeamList() {
+      const container = document.getElementById('teamListContainer');
+      container.innerHTML = '';
+
+      teamMembers.forEach(m => {
+        const count = appointments.filter(a => a.memberId === m.id).length;
+        const isAdm = m.role === 'Administrador';
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between py-2 px-1 text-xs";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full ${isAdm ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-thomaz-navy'} font-bold flex items-center justify-center text-xs">
+              ${isAdm ? '<i class="fa-solid fa-crown text-[10px] text-amber-600"></i>' : escapeHtml(m.name.charAt(0))}
+            </div>
+            <div>
+              <span class="font-bold text-slate-800 block leading-tight">${escapeHtml(m.name)}</span>
+              <span class="text-[10px] text-slate-500 font-medium">${escapeHtml(m.role)} • ${count} agendamento(s)</span>
+            </div>
+          </div>
+          <button onclick="removeMember('${m.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition" title="Remover Integrante">
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function openGoogleSyncModal() {
+      document.getElementById('googleWebhookUrlInput').value = googleWebhookUrl;
+      updateGoogleSyncUI();
+      document.getElementById('googleSyncModal').classList.remove('hidden');
+    }
+
+    function closeGoogleSyncModal() {
+      document.getElementById('googleSyncModal').classList.add('hidden');
+    }
+
+    function saveGoogleWebhookUrl() {
+      const input = document.getElementById('googleWebhookUrlInput');
+      const statusLabel = document.getElementById('webhookSaveStatus');
+      const val = input.value.trim();
+
+      googleWebhookUrl = val;
+      localStorage.setItem(STORAGE_KEY_WEBHOOK, val);
+
+      updateGoogleSyncUI();
+
+      if (val) {
+        statusLabel.textContent = 'Conexão salva com sucesso!';
+        statusLabel.className = 'text-xs font-bold text-emerald-600';
+        showToast('Integração com o Google Planilhas ativada!');
+      } else {
+        statusLabel.textContent = 'Conexão desativada.';
+        statusLabel.className = 'text-xs font-medium text-slate-400';
+        showToast('Envio para Google Sheets desativado.');
+      }
+    }
+
+    function updateGoogleSyncUI() {
+      const banner = document.getElementById('googleSheetsNoticeBanner');
+      const indicator = document.getElementById('googleSyncIndicator');
+      const text = document.getElementById('googleSyncText');
+
+      if (googleWebhookUrl) {
+        banner.classList.add('hidden');
+        indicator.className = "w-2 h-2 rounded-full bg-emerald-500 pulse-dot";
+        text.textContent = "Google Planilhas Conectado";
+        text.className = "hidden lg:inline font-bold text-emerald-700";
+      } else {
+        banner.classList.remove('hidden');
+        indicator.className = "w-2 h-2 rounded-full bg-amber-400";
+        text.textContent = "Conectar Planilha Google";
+        text.className = "hidden lg:inline text-slate-700";
+      }
+    }
+
+    function copyAppsScriptCode() {
+      const code = `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  // Nome | CNPJ | Telefone | Whatsapp | Data Reunião | Horario | Motivo da Reunião | Responsável | Status
+  sheet.appendRow([
+    data.nome,
+    data.cnpj || '',
+    data.telefone,
+    data.whatsapp,
+    data.dataReuniao,
+    data.horario,
+    data.motivo,
+    data.responsavel,
+    data.status,
+    new Date()
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({"result": "success"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+      const el = document.createElement('textarea');
+      el.value = code;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+
+      showToast('Código copiado para a área de transferência!');
+    }
+
+    function exportToCSV() {
+      if (appointments.length === 0) {
+        showToast('Não há agendamentos para exportar.', 'error');
+        return;
+      }
+
+      const headers = [
+        "Nome",
+        "CNPJ",
+        "Telefone (Discador)",
+        "Whatsapp",
+        "Data Reunião",
+        "Horario",
+        "Motivo da Reunião",
+        "Responsável",
+        "Status"
+      ];
+
+      const rows = appointments.map(item => {
+        const member = teamMembers.find(m => m.id === item.memberId);
+        const memberName = member ? member.name : 'Equipe';
+
+        return [
+          `"${(item.nome || '').replace(/"/g, '""')}"`,
+          `"${(item.cnpj || '').replace(/"/g, '""')}"`,
+          `"${(item.telefone || '').replace(/"/g, '""')}"`,
+          `"${(item.whatsapp || '').replace(/"/g, '""')}"`,
+          `"${(item.dataReuniao || '').replace(/"/g, '""')}"`,
+          `"${(item.horario || '').replace(/"/g, '""')}"`,
+          `"${(item.motivo || '').replace(/"/g, '""')}"`,
+          `"${memberName.replace(/"/g, '""')}"`,
+          `"${(item.status || '').replace(/"/g, '""')}"`
+        ];
+      });
+
+      const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `GRUPO_RAFAEL_THOMAZ_AGENDAMENTOS_${getTodayIsoDate()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('Planilha CSV gerada e baixada com sucesso!');
+    }
+
+    function maskCNPJ(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 14) value = value.slice(0, 14);
+
+      if (value.length > 12) {
+        value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+      } else if (value.length > 8) {
+        value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+      } else if (value.length > 5) {
+        value = value.replace(/^(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      } else if (value.length > 2) {
+        value = value.replace(/^(\d{2})(\d{1,3})/, '$1.$2');
+      }
+      input.value = value;
+    }
+
+    function maskPhone(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 11) value = value.slice(0, 11);
+
+      if (value.length > 10) {
+        value = value.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+      } else if (value.length > 5) {
+        value = value.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+      } else if (value.length > 2) {
+        value = value.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+      }
+      input.value = value;
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterMember').value = 'ALL';
+      document.getElementById('filterStatus').value = 'ALL';
+      document.getElementById('filterPeriod').value = 'ALL';
+      renderTable();
+      showToast('Filtros restaurados.');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const isError = type === 'error';
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border text-xs font-semibold text-white transition-all transform duration-200 translate-y-2 pointer-events-auto ${
+        isError ? 'bg-rose-600 border-rose-700' : 'bg-slate-900 border-slate-800'
+      }`;
+      
+      const icon = isError ? 'fa-circle-exclamation' : 'fa-circle-check text-pink-400';
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2');
+        toast.classList.add('translate-y-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => toast.remove(), 200);
+      }, 3500);
+    }
+
+    function createConfirmDialog(question, onConfirm) {
+      const existing = document.getElementById('customConfirmModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'customConfirmModal';
+      modal.className = 'fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4';
+      modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+          <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-lg">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="text-center">
+            <h4 class="text-sm font-bold text-slate-900">Confirmação</h4>
+            <p class="text-xs text-slate-600 mt-1">${escapeHtml(question)}</p>
+          </div>
+          <div class="flex items-center justify-center gap-2 pt-2">
+            <button id="cancelConfirmBtn" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+              Cancelar
+            </button>
+            <button id="okConfirmBtn" class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      document.getElementById('cancelConfirmBtn').onclick = () => modal.remove();
+      document.getElementById('okConfirmBtn').onclick = () => {
+        modal.remove();
+        onConfirm();
+      };
+    }
+  </script>
+</body>
+</html>
